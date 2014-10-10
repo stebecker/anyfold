@@ -5,5 +5,5 @@
 #  TESTS
 #  Independent_suite)
 
-add_test(NAME multi_array_fixture COMMAND multi_array_fixture)
-add_test(NAME cpu_convolve COMMAND cpu_convolve)
+
+add_test(NAME test_cuda_convolve COMMAND test_cuda_convolve)

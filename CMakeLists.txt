@@ -180,8 +180,8 @@ install(FILES
   DESTINATION "${INSTALL_SHARE_DIR}" COMPONENT dev)
 
 # Install the export set for use with the install-tree 
-install(EXPORT cuda_convolve-targets 
-  DESTINATION "${INSTALL_SHARE_DIR}" COMPONENT dev)
+# install(EXPORT cuda_convolve-targets 
+#   DESTINATION "${INSTALL_SHARE_DIR}" COMPONENT dev)
 
 
 

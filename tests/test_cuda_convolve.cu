@@ -6,7 +6,7 @@
 #include <vector>
 #include <functional>
 #include "padd_utils.h"
-#include "cuda_convolve.h"
+#include "cuda_convolve.cuh"
 
 BOOST_FIXTURE_TEST_SUITE( simple_tests, multiviewnative::default_3D_fixture )
 
