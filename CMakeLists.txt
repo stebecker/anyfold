@@ -2,25 +2,24 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
 # project name
-PROJECT(multiviewnative CXX)
+PROJECT(cuda_convolve CXX)
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
  
 # version number
-SET (MULTIVIEWNATIVE_NAME "CUDA Multi-View Deconvolution (Native) Library")
-SET (MULTIVIEWNATIVE_CODENAME "${PROJECT_NAME}")
-SET (MULTIVIEWNATIVE_COPYRIGHT_YEARS "2014")
-SET (MULTIVIEWNATIVE_VERSION_MAJOR 0)
-SET (MULTIVIEWNATIVE_VERSION_MINOR 0)
-SET (MULTIVIEWNATIVE_VERSION_PATCH 0)
-SET (MULTIVIEWNATIVE_VERSION "${MULTIVIEWNATIVE_VERSION_MAJOR}.${MULTIVIEWNATIVE_VERSION_MINOR}.${MULTIVIEWNATIVE_VERSION_PATCH}")
-SET (MULTIVIEWNATIVE_VENDOR_ID "mpi cbg")
-SET (MULTIVIEWNATIVE_VENDOR_NAME "Max Planck Institute of Molecular Cell Biology and Genetics ")
-SET (MULTIVIEWNATIVE_VENDOR_URL "www.mpi-cbg.de")
-SET (MULTIVIEWNATIVE_ID "${MULTIVIEWNATIVE_VENDOR_ID}.${PROJECT_NAME}")
+SET (CUDA_CONVOLVE_NAME "CUDA Multi-View Deconvolution (Native) Library")
+SET (CUDA_CONVOLVE_CODENAME "${PROJECT_NAME}")
+SET (CUDA_CONVOLVE_COPYRIGHT_YEARS "2014")
+SET (CUDA_CONVOLVE_VERSION_MAJOR 0)
+SET (CUDA_CONVOLVE_VERSION_MINOR 0)
+SET (CUDA_CONVOLVE_VERSION_PATCH 0)
+SET (CUDA_CONVOLVE_VERSION "${CUDA_CONVOLVE_VERSION_MAJOR}.${CUDA_CONVOLVE_VERSION_MINOR}.${CUDA_CONVOLVE_VERSION_PATCH}")
+SET (CUDA_CONVOLVE_VENDOR_ID "mpi cbg")
+SET (CUDA_CONVOLVE_VENDOR_NAME "Max Planck Institute of Molecular Cell Biology and Genetics ")
+SET (CUDA_CONVOLVE_VENDOR_URL "www.mpi-cbg.de")
+SET (CUDA_CONVOLVE_ID "${CUDA_CONVOLVE_VENDOR_ID}.${PROJECT_NAME}")
 
 # trying to setup paths so this package can be picked up
-set(INSTALL_LIB_DIR lib CACHE PATH "Installation directory for libraries")
 set(INSTALL_INCLUDE_DIR include CACHE PATH "Installation directory for header files")
 
 # shared path is architecture independent for now, TODO extend this to lib/bin/include
@@ -50,7 +49,7 @@ foreach(p LIB INCLUDE SHARE)
   endif()
 endforeach()
 
-include_directories("${PROJECT_SOURCE_DIR}/inc")
+include_directories("${PROJECT_SOURCE_DIR}/include")
 
 # set project build type
 IF(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
@@ -149,10 +148,6 @@ IF(INCLUDE_CUDA)
 ENDIF(INCLUDE_CUDA)
  
 
-
-# add subdirectories
-ADD_SUBDIRECTORY(src)
-
 FIND_PACKAGE (Boost 1.42 COMPONENTS system filesystem unit_test_framework thread REQUIRED)
 IF(Boost_FOUND)
 ADD_SUBDIRECTORY(tests)
@@ -163,29 +158,29 @@ MESSAGE(WARNING ">> Boost libraries not found, unable to compile tests (skipping
 ENDIF()
 
 export(PACKAGE ${PROJECT_NAME})
-# Create the multiviewnative-config.cmake and multiviewnative-config-version files
+# Create the cuda_convolve-config.cmake and cuda_convolve-config-version files
 file(RELATIVE_PATH REL_INCLUDE_DIR "${INSTALL_SHARE_DIR}"
    "${INSTALL_INCLUDE_DIR}")
 # ... for the build tree
 set(CONF_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}" "${PROJECT_BINARY_DIR}")
-configure_file(multiviewnative-config.cmake.in
-  "${PROJECT_BINARY_DIR}/multiviewnative-config.cmake" @ONLY)
+configure_file(cuda_convolve-config.cmake.in
+  "${PROJECT_BINARY_DIR}/cuda_convolve-config.cmake" @ONLY)
 # ... for the install tree
-set(CONF_INCLUDE_DIRS "\${MULTIVIEWNATIVE}/${REL_INCLUDE_DIR}")
-configure_file(multiviewnative-config.cmake.in
-  "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/multiviewnative-config.cmake" @ONLY)
+set(CONF_INCLUDE_DIRS "\${CUDA_CONVOLVE}/${REL_INCLUDE_DIR}")
+configure_file(cuda_convolve-config.cmake.in
+  "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/cuda_convolve-config.cmake" @ONLY)
 # ... for both
-configure_file(multiviewnative-config-version.cmake.in
-  "${PROJECT_BINARY_DIR}/multiviewnative-config-version.cmake" @ONLY)
+configure_file(cuda_convolve-config-version.cmake.in
+  "${PROJECT_BINARY_DIR}/cuda_convolve-config-version.cmake" @ONLY)
 
-# Install the multiviewnative-config.cmake and multiviewnative-config-version.cmake
+# Install the cuda_convolve-config.cmake and cuda_convolve-config-version.cmake
 install(FILES
-  "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/multiviewnative-config.cmake"
-  "${PROJECT_BINARY_DIR}/multiviewnative-config-version.cmake"
+  "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/cuda_convolve-config.cmake"
+  "${PROJECT_BINARY_DIR}/cuda_convolve-config-version.cmake"
   DESTINATION "${INSTALL_SHARE_DIR}" COMPONENT dev)
 
 # Install the export set for use with the install-tree 
-install(EXPORT multiviewnative-targets 
+install(EXPORT cuda_convolve-targets 
   DESTINATION "${INSTALL_SHARE_DIR}" COMPONENT dev)
 
 
