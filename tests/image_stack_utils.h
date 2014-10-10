@@ -5,7 +5,7 @@
 #include "boost/multi_array.hpp"
 
 
-namespace multiviewnative {
+namespace cuda_convolve {
 
   typedef  boost::multi_array<float,              3>    image_stack;
   typedef  boost::multi_array_ref<float,          3>    image_stack_ref;

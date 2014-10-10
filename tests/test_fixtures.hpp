@@ -13,7 +13,7 @@
 #include "image_stack_utils.h"
 #include "test_algorithms.hpp"
 
-namespace multiviewnative {
+namespace cuda_convolve {
 
 template <unsigned short KernelDimSize = 3, 
 	  unsigned ImageDimSize = 8
@@ -56,7 +56,7 @@ struct convolutionFixture3D
 
 public:
   
-  convolutionFixture3D():
+__host__  convolutionFixture3D():
     image_size_                             ((unsigned)std::pow(ImageDimSize,3)),
     image_dims_                             (3,ImageDimSize),
     image_                                  (boost::extents[ImageDimSize][ImageDimSize][ImageDimSize]),
@@ -257,10 +257,9 @@ public:
 
   }
   
-  virtual ~convolutionFixture3D()  { 
+  __host__ virtual ~convolutionFixture3D()  { 
     
   };
-
     
   static const unsigned image_axis_size = ImageDimSize;
   static const unsigned kernel_axis_size = KernelDimSize;

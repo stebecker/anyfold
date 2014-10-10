@@ -5,6 +5,39 @@
 #include <cmath>
 #include "cuda_runtime.h"
 
+template <typename TransferT, typename TupleT>
+__device__ void x_tiled_load_of_image_segment(const TransferT* _src, 
+                                              TransferT* _dest,//taking for granted that _dest can hold 
+                                              const uint3& _image_dims,
+                                              const TupleT& _extent,
+                                              const TupleT& _origin){
+  
+  int num_tiles_x = (_extent.x + blockDim.x - 1)/blockDim.x;
+  
+  uint3 src_coords;
+  uint3 dest_coords;
+  TransferT src_value = 0;
+  for(int x_tile_index = 0;x_tile_index<num_tiles_x;x_tile_index++){
+    src_coords.x = _origin.x + threadIdx.x + x_tile_index*blockDim.x;
+    src_coords.y = _origin.y + threadIdx.y;
+    src_coords.z = _origin.z + threadIdx.z;
+
+    dest_coords.x = threadIdx.x + x_tile_index*blockDim.x;
+    dest_coords.y = threadIdx.y;
+    dest_coords.z = threadIdx.z;
+        
+    if(src_coords.x < _image_dims.x && src_coords.y < _image_dims.y && src_coords.z < _image_dims.z)
+      src_value = _src[src_coords.z*(_image_dims.y*_image_dims.x) + src_coords.y*(_image_dims.x) + src_coords.x];
+    else
+      src_value = 0;
+
+    if(dest_coords.x < _extent.x)
+      _dest[dest_coords.z*(_extent.y*_extent.x) + dest_coords.y*(_extent.x) + dest_coords.x] = src_value;
+
+    __syncthreads();
+  }
+  
+}
 
 //FIXME: kernel has still some bugs, try with kernel_axis=3 image_axis=100 
 //FIXME: but the code works for some combinations kernel_axis=* image_axis=512
@@ -16,7 +49,7 @@ __global__ void static_convolve(const TransferT* _image,
 				uint3 _image_dims){
 
   // const unsigned int kernel_size = _kernel_line_size*_kernel_line_size*_kernel_line_size;
-  const unsigned int image_size = product_of_tuple_members(&_image_dims);
+  const unsigned int image_size = _image_dims.x * _image_dims.y * _image_dims.z;
   const unsigned int image_line_size = (blockDim.x + _kernel_line_size - 1);
   const unsigned int kernel_block_size = _kernel_line_size;
   const unsigned int half_kernel_dim = _kernel_line_size/2;

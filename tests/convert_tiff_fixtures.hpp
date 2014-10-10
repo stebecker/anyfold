@@ -16,7 +16,7 @@
 
 ////////////////////////////////////////////////////////////////////////////
 
-namespace multiviewnative {
+namespace cuda_convolve {
  
   void fill(const ViewFromDisk& _in, view_data& _value){
 

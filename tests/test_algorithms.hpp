@@ -4,7 +4,7 @@
 #include <vector>
 #include "image_stack_utils.h"
 
-namespace multiviewnative {
+namespace cuda_convolve {
 
   template <typename ImageStackT, typename DimT>
   void convolve(const ImageStackT& _image, 

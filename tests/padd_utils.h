@@ -4,7 +4,7 @@
 #include "boost/multi_array.hpp"
 #include <boost/type_traits.hpp>
 
-namespace multiviewnative {
+namespace cuda_convolve {
   
   template < typename inT ,typename outT  >
 struct add_minus_1 {
