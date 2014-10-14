@@ -58,16 +58,17 @@ __global__ void static_convolve(const TransferT* _image,
   
   TransferT* image_shm = &shmem_data[0];
 
+  //pixel ID incl padding
   const int pixel_x = (int)blockIdx.x*blockDim.x + threadIdx.x + (int)(half_kernel_dim);
   const int pixel_y = (int)blockIdx.y*blockDim.y + threadIdx.y + (int)(half_kernel_dim);
   const int pixel_z = (int)blockIdx.z*blockDim.z + threadIdx.z + (int)(half_kernel_dim);
+  const unsigned int pixel_index = pixel_z*(_image_dims.x*_image_dims.y) + pixel_y*(_image_dims.x) + pixel_x;
 
   //top left pixel coordinates
   const int first_block_pixel_x = pixel_x  - (int)threadIdx.x ;
   const int first_block_pixel_y = pixel_y  - (int)threadIdx.y ;
   const int first_block_pixel_z = pixel_z  - (int)threadIdx.z ;
- 
-  const unsigned int pixel_index = pixel_z*(_image_dims.x*_image_dims.y) + pixel_y*(_image_dims.x) + pixel_x;
+   
 
   // int image_block_start_index_z = 0;
   int kernel_block_start_index_z = 0;

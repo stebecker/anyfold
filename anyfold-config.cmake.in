@@ -1,0 +1,28 @@
+# - Config file for the FooBar package
+# It defines the following variables
+#  ANYFOLD_INCLUDE_DIRS - include directories for Anyfold
+#  ANYFOLD_LIBRARIES    - libraries to link against
+#  ANYFOLD_EXECUTABLE   - the bar executable
+
+# Compute paths
+get_filename_component(ANYFOLD_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+set(ANYFOLD_INCLUDE_DIRS "@CONF_INCLUDE_DIRS@")
+
+# Our library dependencies (contains definitions for IMPORTED targets)
+include("${ANYFOLD_CMAKE_DIR}/anyfold-targets.cmake")
+
+# These are IMPORTED targets created by anyfold-targets.cmake
+IF(UNIX)
+  IF(APPLE)
+    get_filename_component(ANYFOLD_INCLUDE_DIRS "${ANYFOLD_CMAKE_DIR}/../../include" ABSOLUTE)
+    ELSE(APPLE)
+    get_filename_component(ANYFOLD_INCLUDE_DIRS "${ANYFOLD_CMAKE_DIR}/../../../include" ABSOLUTE)
+  ENDIF(APPLE)
+ENDIF(UNIX)
+
+
+set(ANYFOLD_VERSION  "@ANYFOLD_VERSION@")
+set(ANYFOLD_VERSION_MAJOR  "@ANYFOLD_VERSION_MAJOR@")
+set(ANYFOLD_VERSION_MINOR  "@ANYFOLD_VERSION_MINOR@")
+set(ANYFOLD_VERSION_PATCH  "@ANYFOLD_VERSION_PATCH@")
+set(ANYFOLD_BUILD_TYPE  "@CMAKE_BUILD_TYPE@")

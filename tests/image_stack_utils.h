@@ -5,7 +5,7 @@
 #include "boost/multi_array.hpp"
 
 
-namespace cuda_convolve {
+namespace anyfold {
 
   typedef  boost::multi_array<float,              3>    image_stack;
   typedef  boost::multi_array_ref<float,          3>    image_stack_ref;

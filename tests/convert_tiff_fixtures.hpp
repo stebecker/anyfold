@@ -16,7 +16,7 @@
 
 ////////////////////////////////////////////////////////////////////////////
 
-namespace cuda_convolve {
+namespace anyfold {
  
   void fill(const ViewFromDisk& _in, view_data& _value){
 

@@ -6,17 +6,17 @@
 #include <vector>
 #include <functional>
 //#include "padd_utils.h"
-#include "cuda_convolve.cuh"
+#include "anyfold.cuh"
 #include "cuda_helpers.cuh"
 
 
 BOOST_AUTO_TEST_CASE( trivial_convolve )
 {
 
-  using namespace cuda_convolve;
+  using namespace anyfold;
 
   static const unsigned kernel_axis_length = 3;
-  static const unsigned image_axis_length = 64+2*(kernel_axis_length); 
+  static const unsigned image_axis_length = 32+2*(kernel_axis_length); 
   static const unsigned num_pixels = image_axis_length*image_axis_length*image_axis_length;
   static const unsigned num_k_pixels = kernel_axis_length*kernel_axis_length*kernel_axis_length;
 
@@ -42,7 +42,7 @@ BOOST_AUTO_TEST_CASE( trivial_convolve )
   HANDLE_ERROR( cudaMemcpy( d_output, &output[0] , num_pixels*sizeof(float) , cudaMemcpyHostToDevice ) );
   HANDLE_ERROR( cudaMemcpy( d_kernel, &kernel[0] , num_k_pixels*sizeof(float) , cudaMemcpyHostToDevice ) );
 
-  dim3 threads(128);
+  dim3 threads(32);
   dim3 blocks((num_pixels + threads.x -1)/threads.x);
 
   uint3 padded_image_dims;
@@ -63,10 +63,66 @@ BOOST_AUTO_TEST_CASE( trivial_convolve )
 
 }
 
+BOOST_AUTO_TEST_CASE( unit_convolve )
+{
+
+  using namespace anyfold;
+
+  static const unsigned kernel_axis_length = 3;
+  static const unsigned image_axis_length = 32+2*(kernel_axis_length); 
+  static const unsigned num_pixels = image_axis_length*image_axis_length*image_axis_length;
+  static const unsigned num_k_pixels = kernel_axis_length*kernel_axis_length*kernel_axis_length;
+
+  std::vector<float> output(num_pixels);
+  std::vector<float> input (num_pixels);
+  std::vector<float> kernel(num_k_pixels);
+
+  std::fill(kernel.begin(), kernel.end(),0.f);
+  kernel[kernel_axis_length*kernel_axis_length +  kernel_axis_length + 1] = 1;
+  std::fill(input.begin(),input.end(),10); 
+  
+  unsigned long checksum = num_pixels*10;
+
+  float* d_input = 0;
+  float* d_kernel = 0;
+  float* d_output = 0;
+  
+  //allocat ememory in GPU
+  HANDLE_ERROR( cudaMalloc( (void**)&(d_input), num_pixels*sizeof(float) ) );
+  HANDLE_ERROR( cudaMalloc( (void**)&(d_output), num_pixels*sizeof(float) ) );
+  HANDLE_ERROR( cudaMalloc( (void**)&(d_kernel), (num_k_pixels)*sizeof(float) ) );
+
+  HANDLE_ERROR( cudaMemcpy( d_input, &input[0] , num_pixels*sizeof(float) , cudaMemcpyHostToDevice ) );
+  HANDLE_ERROR( cudaMemcpy( d_output, &output[0] , num_pixels*sizeof(float) , cudaMemcpyHostToDevice ) );
+  HANDLE_ERROR( cudaMemcpy( d_kernel, &kernel[0] , num_k_pixels*sizeof(float) , cudaMemcpyHostToDevice ) );
+
+  dim3 threads(32);
+  dim3 blocks((num_pixels + threads.x -1)/threads.x);
+
+  uint3 padded_image_dims;
+  padded_image_dims.x  = image_axis_length;
+  padded_image_dims.y  = image_axis_length;
+  padded_image_dims.z  = image_axis_length;
+
+  static_convolve<3u><<<threads,blocks>>>(d_input, d_kernel, d_output, padded_image_dims);
+  HANDLE_ERROR( cudaGetLastError() );
+
+  HANDLE_ERROR( cudaMemcpy( &output[0], d_output , output.size()*sizeof(float) , cudaMemcpyDeviceToHost ) );
+
+  unsigned long sum = std::accumulate(output.begin(),output.end(),0.f);
+  BOOST_CHECK_EQUAL(sum, checksum);
+
+  HANDLE_ERROR( cudaFree( d_input ) );
+  HANDLE_ERROR( cudaFree( d_kernel ) );
+  HANDLE_ERROR( cudaFree( d_output ) );
+
+}
+
+
 // BOOST_AUTO_TEST_CASE( identity_convolve )
 // {
   
-//   using namespace cuda_convolve;
+//   using namespace anyfold;
 
 //   float sum_expected = std::accumulate(image_.data(), image_.data() + image_.num_elements(),0.f);
 
@@ -89,7 +145,7 @@ BOOST_AUTO_TEST_CASE( trivial_convolve )
 
 // BOOST_AUTO_TEST_CASE( horizontal_convolve )
 // {
-//   using namespace cuda_convolve;
+//   using namespace anyfold;
 
 //   float sum_expected = std::accumulate(image_folded_by_horizontal_.data(), image_folded_by_horizontal_.data() + image_folded_by_horizontal_.num_elements(),0.f);
 
@@ -197,7 +253,7 @@ BOOST_AUTO_TEST_CASE( trivial_convolve )
 
 // BOOST_AUTO_TEST_CASE( trivial_convolve_newapi )
 // {
-//   using namespace cuda_convolve;
+//   using namespace anyfold;
   
 //   float* kernel = new float[kernel_size_];
 //   std::fill(kernel, kernel+kernel_size_,0.f);
@@ -224,7 +280,7 @@ BOOST_AUTO_TEST_CASE( trivial_convolve )
 
 // BOOST_AUTO_TEST_CASE( identity_convolve_newapi )
 // {
-//   using namespace cuda_convolve;
+//   using namespace anyfold;
 
   
 //   image_stack expected = image_;
@@ -250,7 +306,7 @@ BOOST_AUTO_TEST_CASE( trivial_convolve )
 
 // BOOST_AUTO_TEST_CASE( horizontal_convolve_newapi )
 // {
-//   using namespace cuda_convolve;
+//   using namespace anyfold;
 
   
 
@@ -276,7 +332,7 @@ BOOST_AUTO_TEST_CASE( trivial_convolve )
 
 // BOOST_AUTO_TEST_CASE( vertical_convolve_newapi )
 // {
-//   using namespace cuda_convolve;
+//   using namespace anyfold;
 
   
 
@@ -302,7 +358,7 @@ BOOST_AUTO_TEST_CASE( trivial_convolve )
 
 // BOOST_AUTO_TEST_CASE( all1_convolve_newapi )
 // {
-//   using namespace cuda_convolve;
+//   using namespace anyfold;
 
   
 

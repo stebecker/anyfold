@@ -4,7 +4,7 @@
 #include "boost/multi_array.hpp"
 #include <boost/type_traits.hpp>
 
-namespace cuda_convolve {
+namespace anyfold {
   
   template < typename inT ,typename outT  >
 struct add_minus_1 {

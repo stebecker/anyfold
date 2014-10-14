@@ -2,22 +2,22 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
 # project name
-PROJECT(cuda_convolve CXX)
+PROJECT(anyfold CXX)
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
  
 # version number
-SET (CUDA_CONVOLVE_NAME "CUDA Multi-View Deconvolution (Native) Library")
-SET (CUDA_CONVOLVE_CODENAME "${PROJECT_NAME}")
-SET (CUDA_CONVOLVE_COPYRIGHT_YEARS "2014")
-SET (CUDA_CONVOLVE_VERSION_MAJOR 0)
-SET (CUDA_CONVOLVE_VERSION_MINOR 0)
-SET (CUDA_CONVOLVE_VERSION_PATCH 0)
-SET (CUDA_CONVOLVE_VERSION "${CUDA_CONVOLVE_VERSION_MAJOR}.${CUDA_CONVOLVE_VERSION_MINOR}.${CUDA_CONVOLVE_VERSION_PATCH}")
-SET (CUDA_CONVOLVE_VENDOR_ID "mpi cbg")
-SET (CUDA_CONVOLVE_VENDOR_NAME "Max Planck Institute of Molecular Cell Biology and Genetics ")
-SET (CUDA_CONVOLVE_VENDOR_URL "www.mpi-cbg.de")
-SET (CUDA_CONVOLVE_ID "${CUDA_CONVOLVE_VENDOR_ID}.${PROJECT_NAME}")
+SET (ANYFOLD_NAME "CUDA Multi-View Deconvolution (Native) Library")
+SET (ANYFOLD_CODENAME "${PROJECT_NAME}")
+SET (ANYFOLD_COPYRIGHT_YEARS "2014")
+SET (ANYFOLD_VERSION_MAJOR 0)
+SET (ANYFOLD_VERSION_MINOR 0)
+SET (ANYFOLD_VERSION_PATCH 0)
+SET (ANYFOLD_VERSION "${ANYFOLD_VERSION_MAJOR}.${ANYFOLD_VERSION_MINOR}.${ANYFOLD_VERSION_PATCH}")
+SET (ANYFOLD_VENDOR_ID "mpi cbg")
+SET (ANYFOLD_VENDOR_NAME "Max Planck Institute of Molecular Cell Biology and Genetics ")
+SET (ANYFOLD_VENDOR_URL "www.mpi-cbg.de")
+SET (ANYFOLD_ID "${ANYFOLD_VENDOR_ID}.${PROJECT_NAME}")
 
 # trying to setup paths so this package can be picked up
 set(INSTALL_INCLUDE_DIR include CACHE PATH "Installation directory for header files")
@@ -158,29 +158,29 @@ MESSAGE(WARNING ">> Boost libraries not found, unable to compile tests (skipping
 ENDIF()
 
 export(PACKAGE ${PROJECT_NAME})
-# Create the cuda_convolve-config.cmake and cuda_convolve-config-version files
+# Create the anyfold-config.cmake and anyfold-config-version files
 file(RELATIVE_PATH REL_INCLUDE_DIR "${INSTALL_SHARE_DIR}"
    "${INSTALL_INCLUDE_DIR}")
 # ... for the build tree
 set(CONF_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}" "${PROJECT_BINARY_DIR}")
-configure_file(cuda_convolve-config.cmake.in
-  "${PROJECT_BINARY_DIR}/cuda_convolve-config.cmake" @ONLY)
+configure_file(anyfold-config.cmake.in
+  "${PROJECT_BINARY_DIR}/anyfold-config.cmake" @ONLY)
 # ... for the install tree
-set(CONF_INCLUDE_DIRS "\${CUDA_CONVOLVE}/${REL_INCLUDE_DIR}")
-configure_file(cuda_convolve-config.cmake.in
-  "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/cuda_convolve-config.cmake" @ONLY)
+set(CONF_INCLUDE_DIRS "\${ANYFOLD}/${REL_INCLUDE_DIR}")
+configure_file(anyfold-config.cmake.in
+  "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/anyfold-config.cmake" @ONLY)
 # ... for both
-configure_file(cuda_convolve-config-version.cmake.in
-  "${PROJECT_BINARY_DIR}/cuda_convolve-config-version.cmake" @ONLY)
+configure_file(anyfold-config-version.cmake.in
+  "${PROJECT_BINARY_DIR}/anyfold-config-version.cmake" @ONLY)
 
-# Install the cuda_convolve-config.cmake and cuda_convolve-config-version.cmake
+# Install the anyfold-config.cmake and anyfold-config-version.cmake
 install(FILES
-  "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/cuda_convolve-config.cmake"
-  "${PROJECT_BINARY_DIR}/cuda_convolve-config-version.cmake"
+  "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/anyfold-config.cmake"
+  "${PROJECT_BINARY_DIR}/anyfold-config-version.cmake"
   DESTINATION "${INSTALL_SHARE_DIR}" COMPONENT dev)
 
 # Install the export set for use with the install-tree 
-# install(EXPORT cuda_convolve-targets 
+# install(EXPORT anyfold-targets 
 #   DESTINATION "${INSTALL_SHARE_DIR}" COMPONENT dev)
 
 

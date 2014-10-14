@@ -13,7 +13,7 @@
 #include "image_stack_utils.h"
 #include "test_algorithms.hpp"
 
-namespace cuda_convolve {
+namespace anyfold {
 
 template <unsigned short KernelDimSize = 3, 
 	  unsigned ImageDimSize = 8

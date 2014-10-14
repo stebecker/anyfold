@@ -4,7 +4,7 @@
 #include <vector>
 #include "image_stack_utils.h"
 
-namespace cuda_convolve {
+namespace anyfold {
 
   template <typename ImageStackT, typename DimT>
   void convolve(const ImageStackT& _image, 
