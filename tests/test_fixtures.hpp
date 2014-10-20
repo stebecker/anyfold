@@ -44,7 +44,7 @@ struct convolutionFixture3D
   image_stack       trivial_kernel_                         ;
   image_stack       identity_kernel_                        ;
   image_stack       vertical_kernel_                        ;
-  image_stack       horizont_kernel_                        ;
+  image_stack       horizontal_kernel_                        ;
   image_stack       depth_kernel_                           ;
   image_stack       all1_kernel_                            ;
   image_stack       asymm_cross_kernel_                     ;
@@ -56,7 +56,7 @@ struct convolutionFixture3D
 
 public:
   
-__host__  convolutionFixture3D():
+  convolutionFixture3D():
     image_size_                             ((unsigned)std::pow(ImageDimSize,3)),
     image_dims_                             (3,ImageDimSize),
     image_                                  (boost::extents[ImageDimSize][ImageDimSize][ImageDimSize]),
@@ -78,12 +78,12 @@ __host__  convolutionFixture3D():
     trivial_kernel_                         (boost::extents[KernelDimSize][KernelDimSize][KernelDimSize]),
     identity_kernel_                        (boost::extents[KernelDimSize][KernelDimSize][KernelDimSize]),
     vertical_kernel_                        (boost::extents[KernelDimSize][KernelDimSize][KernelDimSize]),
-    horizont_kernel_                        (boost::extents[KernelDimSize][KernelDimSize][KernelDimSize]),
+    horizontal_kernel_                        (boost::extents[KernelDimSize][KernelDimSize][KernelDimSize]),
     depth_kernel_                           (boost::extents[KernelDimSize][KernelDimSize][KernelDimSize]),
     all1_kernel_                            (boost::extents[KernelDimSize][KernelDimSize][KernelDimSize]),
-    asymm_cross_kernel_                     (boost::extents[KernelDimSize+1][KernelDimSize][KernelDimSize-1]),
-    asymm_one_kernel_                       (boost::extents[KernelDimSize+1][KernelDimSize][KernelDimSize-1]),
-    asymm_identity_kernel_                  (boost::extents[KernelDimSize+1][KernelDimSize][KernelDimSize-1])
+    asymm_cross_kernel_                     (boost::extents[KernelDimSize+2][KernelDimSize][KernelDimSize+4]),
+    asymm_one_kernel_                       (boost::extents[KernelDimSize+2][KernelDimSize][KernelDimSize+4]),
+    asymm_identity_kernel_                  (boost::extents[KernelDimSize+2][KernelDimSize][KernelDimSize+4])
   {
     
     //FILL KERNELS
@@ -93,7 +93,7 @@ __host__  convolutionFixture3D():
     std::fill(identity_kernel_.data()      ,identity_kernel_.data()      +  kernel_size_                           ,0.f);
     std::fill(vertical_kernel_.data()      ,vertical_kernel_.data()      +  kernel_size_                           ,0.f);
     std::fill(depth_kernel_.data()         ,depth_kernel_.data()         +  kernel_size_                           ,0.f);
-    std::fill(horizont_kernel_.data()      ,horizont_kernel_.data()      +  kernel_size_                           ,0.f);
+    std::fill(horizontal_kernel_.data()      ,horizontal_kernel_.data()      +  kernel_size_                           ,0.f);
     std::fill(all1_kernel_.data()          ,all1_kernel_.data()          +  kernel_size_                           ,1.f);
     std::fill(asymm_cross_kernel_.data()     ,asymm_cross_kernel_.data()     +  asymm_cross_kernel_.num_elements()     ,0.f);
     std::fill(asymm_one_kernel_.data()       ,asymm_one_kernel_.data()       +  asymm_one_kernel_.num_elements()       ,0.f);
@@ -103,7 +103,7 @@ __host__  convolutionFixture3D():
     identity_kernel_.data()[kernel_size_/2]=1.; 
 
     for(unsigned int index = 0;index<KernelDimSize;++index){
-      horizont_kernel_[index][halfKernel][halfKernel] = float(index+1);
+      horizontal_kernel_[index][halfKernel][halfKernel] = float(index+1);
       vertical_kernel_[halfKernel][index][halfKernel] = float(index+1);
       depth_kernel_   [halfKernel][halfKernel][index] = float(index+1);
     }
@@ -192,7 +192,7 @@ __host__  convolutionFixture3D():
     image_stack asymm_padded_one_folded_by_asymm_identity_kernel = asymm_padded_one_;
 
     //CONVOLVE
-    convolve(padded_image_, horizont_kernel_, padded_image_folded_by_horizontal, symm_offsets);
+    convolve(padded_image_, horizontal_kernel_, padded_image_folded_by_horizontal, symm_offsets);
     convolve(padded_image_, vertical_kernel_, padded_image_folded_by_vertical, symm_offsets);
     convolve(padded_image_, depth_kernel_, padded_image_folded_by_depth, symm_offsets);
     convolve(padded_image_, all1_kernel_, padded_image_folded_by_all1, symm_offsets);
@@ -201,49 +201,6 @@ __host__  convolutionFixture3D():
     convolve(asymm_padded_one_  ,  asymm_one_kernel_       ,  asymm_padded_one_folded_by_asymm_one_kernel       ,  asymm_offsets);
     convolve(asymm_padded_one_  ,  asymm_identity_kernel_  ,  asymm_padded_one_folded_by_asymm_identity_kernel  ,  asymm_offsets);
     
-    // for(int z_index = halfKernel;z_index<int(padded_image_axis-halfKernel);++z_index){
-    //   for(int y_index = halfKernel;y_index<int(padded_image_axis-halfKernel);++y_index){
-    // 	for(int x_index = halfKernel;x_index<int(padded_image_axis-halfKernel);++x_index){
-	  	  
-    // 	  padded_image_folded_by_horizontal[x_index][y_index][z_index] = 0.f;
-    // 	  padded_image_folded_by_vertical[x_index][y_index][z_index] = 0.f;
-    // 	  padded_image_folded_by_depth[x_index][y_index][z_index] = 0.f;
-    // 	  padded_image_folded_by_all1[x_index][y_index][z_index] = 0.f;
-
-    // 	  for(int kindex = 0;kindex<KernelDimSize;++kindex){
-    // 	    //convolution in x
-    // 	    kernel_value  =  horizont_kernel_[KernelDimSize-1-kindex][halfKernel][halfKernel]	;
-    // 	    image_value   =  padded_image_[x_index-halfKernel+kindex][y_index][z_index]		;
-    // 	    padded_image_folded_by_horizontal[x_index][y_index][z_index] += kernel_value*image_value;
-
-    // 	    //convolution in y
-    // 	    kernel_value  = vertical_kernel_[halfKernel][KernelDimSize-1-kindex][halfKernel];
-    // 	    image_value   = padded_image_[x_index][y_index-halfKernel+kindex][z_index];
-    // 	    padded_image_folded_by_vertical[x_index][y_index][z_index] += kernel_value*image_value;
-	      
-
-    // 	    //convolution in z
-    // 	    kernel_value  = depth_kernel_[halfKernel][halfKernel][KernelDimSize-1-kindex];
-    // 	    image_value   = padded_image_[x_index][y_index][z_index-halfKernel+kindex];
-    // 	    padded_image_folded_by_depth[x_index][y_index][z_index] += kernel_value*image_value;
-	      
-    // 	  }
-  
-
-    // 	  newValue = 0.;
-    // 	  for(int z_kernel = -(int)halfKernel;z_kernel<=((int)halfKernel);++z_kernel){
-    // 	    for(int y_kernel = -(int)halfKernel;y_kernel<=((int)halfKernel);++y_kernel){
-    // 	      for(int x_kernel = -(int)halfKernel;x_kernel<=((int)halfKernel);++x_kernel){
-    // 		newValue += padded_image_[x_index+x_kernel][y_index+y_kernel][z_index+z_kernel]*all1_kernel_[halfKernel+x_kernel][halfKernel+y_kernel][halfKernel+z_kernel];
-    // 	      }
-    // 	    }
-    // 	  }
-    // 	  padded_image_folded_by_all1[x_index][y_index][z_index] = newValue;
-	
-    // 	}
-     
-    //   }
-    // }
     
     //EXTRACT NON-PADDED CONTENT FROM CONVOLVED IMAGE STACKS
     image_folded_by_horizontal_  = padded_image_folded_by_horizontal[ boost::indices[axis_subrange][axis_subrange][axis_subrange] ];
@@ -257,7 +214,7 @@ __host__  convolutionFixture3D():
 
   }
   
-  __host__ virtual ~convolutionFixture3D()  { 
+   virtual ~convolutionFixture3D()  { 
     
   };
     

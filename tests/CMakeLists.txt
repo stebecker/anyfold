@@ -7,7 +7,9 @@ INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
 LINK_DIRECTORIES(${Boost_LIBRARY_DIRS}) 
 ENDIF()
 
-
+add_executable(test_cpu_convolve test_cpu_convolve.cpp)
+target_link_libraries(test_cpu_convolve boost_system boost_filesystem boost_unit_test_framework )
+set_target_properties(test_cpu_convolve PROPERTIES COMPILE_FLAGS "-I${PROJECT_SOURCE_DIR}/include")
 
 IF(CUDA_FOUND)
 CUDA_ADD_EXECUTABLE(test_cuda_convolve test_cuda_convolve.cu)
