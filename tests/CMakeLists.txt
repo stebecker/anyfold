@@ -10,9 +10,9 @@ ENDIF()
 
 
 IF(CUDA_FOUND)
-CUDA_ADD_EXECUTABLE(test_anyfold test_anyfold.cu)
-target_link_libraries(test_anyfold boost_system boost_filesystem boost_unit_test_framework )
-set_target_properties(test_anyfold PROPERTIES COMPILE_FLAGS "-I${PROJECT_SOURCE_DIR}/include")
+CUDA_ADD_EXECUTABLE(test_cuda_convolve test_cuda_convolve.cu)
+target_link_libraries(test_cuda_convolve boost_system boost_filesystem boost_unit_test_framework )
+set_target_properties(test_cuda_convolve PROPERTIES COMPILE_FLAGS "-I${PROJECT_SOURCE_DIR}/include")
 ELSE(CUDA_FOUND)
 WARNING("Skipping CUDA based tests, CUDA not found\!")
 ENDIF(CUDA_FOUND)

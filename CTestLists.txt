@@ -6,4 +6,4 @@
 #  Independent_suite)
 
 
-add_test(NAME test_anyfold COMMAND test_anyfold)
+add_test(NAME test_cuda_convolve COMMAND test_cuda_convolve)
