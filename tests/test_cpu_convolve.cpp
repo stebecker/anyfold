@@ -3,239 +3,137 @@
 #include "boost/test/unit_test.hpp"
 #include "test_fixtures.hpp"
 #include <numeric>
-#include <vector>
-#include <functional>
-#include "cpu_convolve.hpp"
+#include <algorithm>
+#include "anyfold.hpp"
 
-using namespace anyfold;
+#include "test_algorithms.hpp"
+#include "image_stack_utils.h"
 
-BOOST_FIXTURE_TEST_SUITE( simple_cpu_convolution, anyfold::default_3D_fixture )
+static anyfold::storage local_order = boost::c_storage_order();
+
+BOOST_FIXTURE_TEST_SUITE( convolution_works, anyfold::default_3D_fixture )
 
 BOOST_AUTO_TEST_CASE( trivial_convolve )
 {
 
-
-  std::vector<float> kernel(kernel_size_);
-  std::fill(kernel.begin(), kernel.end(), 0.f);
-
-  anyfold::discrete_convolve_3d(image_.data(), &image_dims_[0],
-				kernel.begin(), &kernel_dims_[0],
-				one_.data());
-
-  unsigned long sum = std::accumulate(one_.data(),one_.data() + image_size_,0.f);
-  unsigned long checksum = std::accumulate(image_.data(),image_.data() + image_size_,0.f);
+  const float* image = padded_image_.data();
+  anyfold::image_stack expected(image_);
   
-  BOOST_CHECK_LT(sum, checksum);
+  
+  float* kernel = new float[kernel_size_];
+  std::fill(kernel, kernel+kernel_size_,0.f);
 
-  unsigned center_pixel = image_size_/2 + 
-    std::accumulate(image_dims_.begin(), image_dims_.end()-1,1.f,std::multiplies<int>())/2 +
-    image_dims_[0]/2
-    ;
+  anyfold::cpu::convolve_3d(image, &padded_image_shape_[0], 
+			    kernel,&kernel_dims_[0],
+			    padded_output_.data());
 
-  BOOST_CHECK_EQUAL(one_.data()[center_pixel], 0);
+  float sum = std::accumulate(padded_output_.data(), 
+			      padded_output_.data() + padded_output_.num_elements(),0.f);
+
+  BOOST_CHECK_CLOSE(sum, 0.f, .00001);
+
+  delete [] kernel;
 }
 
 BOOST_AUTO_TEST_CASE( identity_convolve )
 {
-
-  anyfold::discrete_convolve_3d(image_.data(), &image_dims_[0],
-				identity_kernel_.data(), &kernel_dims_[0],
-				one_.data());
-
-  unsigned long sum = std::accumulate(one_.data(),one_.data() + image_size_,0.f);
-  unsigned long checksum = std::accumulate(image_.data(),image_.data() + image_size_,0.f);
   
-  BOOST_CHECK_EQUAL(sum, checksum);
 
-  unsigned center_pixel = image_size_/2 + 
-    std::accumulate(image_dims_.begin(), image_dims_.end()-1,1.f,std::multiplies<int>())/2 +
-    image_dims_[0]/2
-    ;
+  float sum_original = std::accumulate(padded_image_.data(), 
+				       padded_image_.data() + padded_image_.num_elements(),
+				       0.f);
 
-  try{
-    BOOST_REQUIRE_EQUAL(one_.data()[center_pixel ], image_.data()[center_pixel]);
-  }
-  catch(...){
-    std::cerr << "input :\n" <<  image_ << "\n\n"
-	      << "kernel:\n" <<  identity_kernel_ << "\n\n"
-	      << "output:\n" <<  one_ << "\n";
-  }
+   anyfold::cpu::convolve_3d(padded_image_.data(),(int*)&padded_image_shape_[0], 
+			     identity_kernel_.data(),&kernel_dims_[0],
+			     padded_output_.data());
 
-  BOOST_CHECK_EQUAL_COLLECTIONS(one_.data(),one_.data() + image_size_,
-			       image_.data(),image_.data() + image_size_);
+  float sum = std::accumulate(padded_output_.data(), 
+			      padded_output_.data() + padded_output_.num_elements(),
+			      0.f);
+  BOOST_CHECK_CLOSE(sum, sum_original, .00001);
+  
+  float l2norm = anyfold::l2norm(padded_image_.data(), padded_output_.data(),  padded_output_.num_elements());
+  BOOST_CHECK_CLOSE(l2norm, 0, .00001);
 }
-
-BOOST_AUTO_TEST_SUITE_END()
-
-
-BOOST_FIXTURE_TEST_SUITE( mono_directional_convolutions, anyfold::default_3D_fixture )
-
 
 BOOST_AUTO_TEST_CASE( horizontal_convolve )
 {
 
-  std::vector<int> padded_dims(3);
-  std::copy(padded_image_.shape(), padded_image_.shape() + 3,padded_dims.begin());
 
-  anyfold::discrete_convolve_3d(padded_image_.data(), &padded_dims[0],
-				horizontal_kernel_.data(), &kernel_dims_[0],
-				padded_one_.data());
+  anyfold::cpu::convolve_3d(padded_image_.data(),(int*)&padded_image_shape_[0], 
+			    horizontal_kernel_.data(),&kernel_dims_[0],
+			    padded_output_.data());
 
-  one_ = padded_one_[boost::indices[range(kernel_dims_[0]/2, padded_dims[0] - kernel_dims_[0]/2)][range(kernel_dims_[1]/2, padded_dims[1] - kernel_dims_[1]/2)][range(kernel_dims_[2]/2, padded_dims[1] - kernel_dims_[2]/2)] ];
+  float sum = std::accumulate(padded_output_.data(), 
+			      padded_output_.data() + padded_output_.num_elements(),
+			      0.f);
+  float sum_expected = std::accumulate(padded_image_folded_by_horizontal_.data(), 
+				       padded_image_folded_by_horizontal_.data() + padded_image_folded_by_horizontal_.num_elements(),
+				       0.f);
 
-  try{
-  BOOST_REQUIRE_EQUAL_COLLECTIONS(one_.data(),one_.data() + image_size_,
-				  image_folded_by_horizontal_ .data(),image_folded_by_horizontal_ .data() + image_size_);
-    }
-  catch(...){
-    std::cerr << "input :\n" <<  image_ << "\n\n"
-	      << "kernel:\n" <<  horizontal_kernel_ << "\n\n"
-	      << "output:\n" <<  one_ << "\n"
-      	      << "expected:\n" <<  image_folded_by_horizontal_ << "\n"
-      ;
-  }
-
+  BOOST_REQUIRE_CLOSE(sum, sum_expected, .00001f);
+  float l2norm = anyfold::l2norm(padded_output_.data(), padded_image_folded_by_horizontal_.data(),  padded_output_.num_elements());
+  BOOST_REQUIRE_CLOSE(l2norm, 0, .00001);
 }
 
 BOOST_AUTO_TEST_CASE( vertical_convolve )
 {
 
-  std::vector<int> padded_dims(3);
-  std::copy(padded_image_.shape(), padded_image_.shape() + 3,padded_dims.begin());
 
-  anyfold::discrete_convolve_3d(padded_image_.data(), &padded_dims[0],
-				vertical_kernel_.data(), &kernel_dims_[0],
-				padded_one_.data());
+  anyfold::cpu::convolve_3d(padded_image_.data(),(int*)&padded_image_shape_[0], 
+			    vertical_kernel_.data(),&kernel_dims_[0],
+			    padded_output_.data());
 
-  one_ = padded_one_[boost::indices[range(kernel_dims_[0]/2, padded_dims[0] - kernel_dims_[0]/2)][range(kernel_dims_[1]/2, padded_dims[1] - kernel_dims_[1]/2)][range(kernel_dims_[2]/2, padded_dims[1] - kernel_dims_[2]/2)] ];
+  float sum = std::accumulate(padded_output_.data(), 
+			      padded_output_.data() + padded_output_.num_elements(),
+			      0.f);
+  float sum_expected = std::accumulate(padded_image_folded_by_vertical_.data(), 
+				       padded_image_folded_by_vertical_.data() + padded_image_folded_by_vertical_.num_elements(),
+				       0.f);
 
-  try{
-  BOOST_REQUIRE_EQUAL_COLLECTIONS(one_.data(),one_.data() + image_size_,
-				  image_folded_by_vertical_ .data(),image_folded_by_vertical_ .data() + image_size_);
-    }
-  catch(...){
-    std::cerr << "input :\n" <<  image_ << "\n\n"
-	      << "kernel:\n" <<  vertical_kernel_ << "\n\n"
-	      << "output:\n" <<  one_ << "\n"
-      	      << "expected:\n" <<  image_folded_by_vertical_ << "\n"
-      ;
-  }
-
+  BOOST_REQUIRE_CLOSE(sum, sum_expected, .00001f);
+  float l2norm = anyfold::l2norm(padded_output_.data(), padded_image_folded_by_vertical_.data(),  padded_output_.num_elements());
+  BOOST_REQUIRE_CLOSE(l2norm, 0, .00001);
 }
 
 
 BOOST_AUTO_TEST_CASE( depth_convolve )
 {
 
-  std::vector<int> padded_dims(3);
-  std::copy(padded_image_.shape(), padded_image_.shape() + 3,padded_dims.begin());
 
-  anyfold::discrete_convolve_3d(padded_image_.data(), &padded_dims[0],
-				depth_kernel_.data(), &kernel_dims_[0],
-				padded_one_.data());
+  anyfold::cpu::convolve_3d(padded_image_.data(),(int*)&padded_image_shape_[0], 
+			    depth_kernel_.data(),&kernel_dims_[0],
+			    padded_output_.data());
 
-  one_ = padded_one_[boost::indices[range(kernel_dims_[0]/2, padded_dims[0] - kernel_dims_[0]/2)][range(kernel_dims_[1]/2, padded_dims[1] - kernel_dims_[1]/2)][range(kernel_dims_[2]/2, padded_dims[1] - kernel_dims_[2]/2)] ];
+  float sum = std::accumulate(padded_output_.data(), 
+			      padded_output_.data() + padded_output_.num_elements(),
+			      0.f);
+  float sum_expected = std::accumulate(padded_image_folded_by_depth_.data(), 
+				       padded_image_folded_by_depth_.data() + padded_image_folded_by_depth_.num_elements(),
+				       0.f);
 
-  try{
-  BOOST_REQUIRE_EQUAL_COLLECTIONS(one_.data(),one_.data() + image_size_,
-				  image_folded_by_depth_ .data(),image_folded_by_depth_ .data() + image_size_);
-    }
-  catch(...){
-    std::cerr << "input :\n" <<  image_ << "\n\n"
-	      << "kernel:\n" <<  depth_kernel_ << "\n\n"
-	      << "output:\n" <<  one_ << "\n"
-      	      << "expected:\n" <<  image_folded_by_depth_ << "\n"
-      ;
-  }
-
+  BOOST_REQUIRE_CLOSE(sum, sum_expected, .00001f);
+  float l2norm = anyfold::l2norm(padded_output_.data(), padded_image_folded_by_depth_.data(),  padded_output_.num_elements());
+  BOOST_REQUIRE_CLOSE(l2norm, 0, .00001);
 }
 
-
-BOOST_AUTO_TEST_SUITE_END()
-
-BOOST_FIXTURE_TEST_SUITE( complex_cpu_convolution, anyfold::default_3D_fixture )
-
-BOOST_AUTO_TEST_CASE( asymm_cross_convolve )
+BOOST_AUTO_TEST_CASE( all1_convolve )
 {
 
 
-  std::vector<int> padded_dims(3);
-  std::copy(asymm_padded_image_.shape(), asymm_padded_image_.shape() + 3,padded_dims.begin());
+  anyfold::cpu::convolve_3d(padded_image_.data(),(int*)&padded_image_shape_[0], 
+			    all1_kernel_.data(),&kernel_dims_[0],
+			    padded_output_.data());
 
-  anyfold::discrete_convolve_3d(asymm_padded_one_.data(), &padded_dims[0],
-				asymm_cross_kernel_.data(), &asymm_kernel_dims_[0],
-				asymm_padded_image_.data());
+  float sum = std::accumulate(padded_output_.data(), 
+			      padded_output_.data() + padded_output_.num_elements(),
+			      0.f);
+  float sum_expected = std::accumulate(padded_image_folded_by_all1_.data(), 
+				       padded_image_folded_by_all1_.data() + padded_image_folded_by_all1_.num_elements(),
+				       0.f);
 
-  image_ = asymm_padded_image_[boost::indices[range(asymm_kernel_dims_[0]/2, padded_dims[0] - asymm_kernel_dims_[0]/2)][range(asymm_kernel_dims_[1]/2, padded_dims[1] - asymm_kernel_dims_[1]/2)][range(asymm_kernel_dims_[2]/2, padded_dims[2] - asymm_kernel_dims_[2]/2)] ];
-
-  try{
-    BOOST_REQUIRE_EQUAL_COLLECTIONS(image_.data(),image_.data() + image_size_,
-				    one_folded_by_asymm_cross_kernel_ .data(), one_folded_by_asymm_cross_kernel_.data() + image_size_);
-  }
-  catch(...){
-    std::cerr << "input :\n" <<  one_ << "\n\n"
-	      << "kernel:\n" <<  asymm_cross_kernel_ << "\n\n"
-	      << "output:\n" <<  image_ << "\n"
-      	      << "expected:\n" <<  one_folded_by_asymm_cross_kernel_ << "\n"
-	      << "padded_output:\n" << asymm_padded_image_ << "\n"
-      ;
-  }
-
-}
-
-BOOST_AUTO_TEST_CASE( asymm_identity_convolve )
-{
-
-
-  std::vector<int> padded_dims(3);
-  std::copy(asymm_padded_image_.shape(), asymm_padded_image_.shape() + 3,padded_dims.begin());
-  
-  anyfold::discrete_convolve_3d(asymm_padded_one_.data(), &padded_dims[0],
-				asymm_identity_kernel_.data(), &asymm_kernel_dims_[0],
-				asymm_padded_image_.data());
-
-  image_ = asymm_padded_image_[boost::indices[range(asymm_kernel_dims_[0]/2, padded_dims[0] - asymm_kernel_dims_[0]/2)][range(asymm_kernel_dims_[1]/2, padded_dims[1] - asymm_kernel_dims_[1]/2)][range(asymm_kernel_dims_[2]/2, padded_dims[2] - asymm_kernel_dims_[2]/2)] ];
-
-  try{
-    BOOST_REQUIRE_EQUAL_COLLECTIONS(image_.data(),image_.data() + image_size_,
-				    one_folded_by_asymm_identity_kernel_ .data(), one_folded_by_asymm_identity_kernel_.data() + image_size_);
-  }
-  catch(...){
-    std::cerr << "input :\n" <<  one_ << "\n\n"
-	      << "kernel:\n" <<  asymm_identity_kernel_ << "\n\n"
-	      << "output:\n" <<  image_ << "\n"
-      	      << "expected:\n" <<  one_folded_by_asymm_identity_kernel_ << "\n"
-	      << "padded_output:\n" << asymm_padded_image_ << "\n"
-      ;
-  }
-
-}
-
-BOOST_AUTO_TEST_CASE( asymm_one_convolve )
-{
-
-
-  std::vector<int> padded_dims(3);
-  std::copy(asymm_padded_image_.shape(), asymm_padded_image_.shape() + 3,padded_dims.begin());
-
-  anyfold::discrete_convolve_3d(asymm_padded_one_.data(), &padded_dims[0],
-				asymm_one_kernel_.data(), &asymm_kernel_dims_[0],
-				asymm_padded_image_.data());
-
-  image_ = asymm_padded_image_[boost::indices[range(asymm_kernel_dims_[0]/2, padded_dims[0] - asymm_kernel_dims_[0]/2)][range(asymm_kernel_dims_[1]/2, padded_dims[1] - asymm_kernel_dims_[1]/2)][range(asymm_kernel_dims_[2]/2, padded_dims[2] - asymm_kernel_dims_[2]/2)] ];
-
-  try{
-    BOOST_REQUIRE_EQUAL_COLLECTIONS(image_.data(),image_.data() + image_size_,
-				     one_folded_by_asymm_one_kernel_ .data(), one_folded_by_asymm_one_kernel_.data() + image_size_);
-  }
-  catch(...){
-    std::cerr << "input :\n" <<  one_ << "\n\n"
-	      << "kernel:\n" <<  asymm_one_kernel_ << "\n\n"
-	      << "output:\n" <<  image_ << "\n"
-      	      << "expected:\n" <<  one_folded_by_asymm_one_kernel_ << "\n"
-	      << "padded_output:\n" << asymm_padded_image_ << "\n"
-      ;
-  }
-
+  BOOST_REQUIRE_CLOSE(sum, sum_expected, .00001f);
+  float l2norm = anyfold::l2norm(padded_output_.data(), padded_image_folded_by_all1_.data(),  padded_output_.num_elements());
+  BOOST_REQUIRE_CLOSE(l2norm, 0, .00001);
 }
 BOOST_AUTO_TEST_SUITE_END()

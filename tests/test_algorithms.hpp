@@ -79,8 +79,8 @@ namespace anyfold {
 		const DimT& _size){
 
     ValueT l2norm = 0.;
-    
-#pragma parallel for num_threads(omp_get_num_procs()) shared(l2norm)
+
+    //    #pragma parallel for num_threads(omp_get_num_procs()) shared(l2norm)
     for(unsigned p = 0;p<_size;++p)
       l2norm += (_first[p] - _second[p])*(_first[p] - _second[p]);
     
@@ -100,7 +100,7 @@ namespace anyfold {
     
     float l2norm = 0.;
 
-    #pragma parallel for num_threads(omp_get_num_procs()) shared(l2norm)
+    //    #pragma parallel for num_threads(omp_get_num_procs()) shared(l2norm)
     for(int image_z = _first.shape()[2]*_rel_lower_limit_per_axis;image_z<int(_first.shape()[2]*_rel_upper_limit_per_axis);++image_z){
       for(int image_y = _first.shape()[1]*_rel_lower_limit_per_axis;image_y<int(_first.shape()[1]*_rel_upper_limit_per_axis);++image_y){
 	for(int image_x = _first.shape()[0]*_rel_lower_limit_per_axis;image_x<int(_first.shape()[0]*_rel_upper_limit_per_axis);++image_x){
@@ -122,7 +122,7 @@ namespace anyfold {
 
     ValueT l1norm = 0.;
 
-    #pragma parallel for num_threads(omp_get_num_procs()) shared(l2norm)
+    //    #pragma parallel for num_threads(omp_get_num_procs()) shared(l2norm)
     for(unsigned p = 0;p<_size;++p)
       l1norm += std::fabs(_first[p] - _second[p]);
     

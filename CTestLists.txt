@@ -1,9 +1,2 @@
-# include(BoostTestTargets)
-# add_boost_test(Independent
-#  SOURCES
-#  test_Independent.cpp
-#  TESTS
-#  Independent_suite)
 
-
-add_test(NAME test_cuda_convolve COMMAND test_cuda_convolve)
+add_test(NAME test_cpu_convolve COMMAND test_cpu_convolve)
