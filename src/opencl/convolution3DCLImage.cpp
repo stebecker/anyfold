@@ -1,7 +1,7 @@
 #include <iostream>
 #include <fstream>
 
-#include "opencl/convolution3DCL.hpp"
+#include "opencl/convolution3DCLImage.hpp"
 
 namespace anyfold {
 
@@ -11,14 +11,14 @@ namespace opencl {
 		checkError(status, fctname, __FILE__, __LINE__ -1);	\
 	}
 
-void CL_CALLBACK errorCallback(const char *errinfo,
+static void CL_CALLBACK errorCallback(const char *errinfo,
                                const void *private_info, size_t cb,
                                void *user_data)
 {
 	std::cerr << errinfo << " (reported by error callback)" << std::endl;
 }
 
-std::string Convolution3DCL::getPlatformInfo(cl::Platform platform, cl_platform_info info)
+std::string Convolution3DCLImage::getPlatformInfo(cl::Platform platform, cl_platform_info info)
 {
 	std::string result;
 	cl_int status = platform.getInfo(info,&result);
@@ -26,7 +26,7 @@ std::string Convolution3DCL::getPlatformInfo(cl::Platform platform, cl_platform_
 	return result;
 }
 
-std::string Convolution3DCL::getDeviceName(cl::Device device)
+std::string Convolution3DCLImage::getDeviceName(cl::Device device)
 {
 	std::string result;
 	cl_int status = device.getInfo(CL_DEVICE_NAME,&result);
@@ -34,7 +34,7 @@ std::string Convolution3DCL::getDeviceName(cl::Device device)
 	return result;
 }
 
-std::string Convolution3DCL::getDeviceInfo(cl::Device device, cl_device_info info)
+std::string Convolution3DCLImage::getDeviceInfo(cl::Device device, cl_device_info info)
 {
 	std::string result;
 	status = device.getInfo(info,&result);
@@ -43,7 +43,7 @@ std::string Convolution3DCL::getDeviceInfo(cl::Device device, cl_device_info inf
 }
 
 
-void Convolution3DCL::createProgramAndLoadKernel(const std::string& fileName, const std::string& kernelName, size_t const* filterSize)
+void Convolution3DCLImage::createProgramAndLoadKernel(const std::string& fileName,const std::string& kernelName, size_t const* filterSize)
 {
 	std::string content;
 	std::ifstream in(fileName, std::ios::in);
@@ -56,18 +56,18 @@ void Convolution3DCL::createProgramAndLoadKernel(const std::string& fileName, co
 		in.close();
 	}
 
-	createProgram(content, filterSize);
+	createProgram(content,filterSize);
 	loadKernel(kernelName);
 }
 
-void Convolution3DCL::createProgram(const std::string& source, 
+void Convolution3DCLImage::createProgram(const std::string& source, 
                                     size_t const* fs)
 {
 	cl::Program::Sources program_source(1, std::make_pair(source.c_str(), source.length()));
 
 	program = cl::Program(context, program_source, &status);
 	CHECK_ERROR(status, "cl::Program");
-	
+
 	std::string defines = std::string("-D FILTER_SIZE_X=") +
 	                      std::to_string(fs[2]) +
 	                      std::string(" -D FILTER_SIZE_Y=") +
@@ -84,26 +84,27 @@ void Convolution3DCL::createProgram(const std::string& source,
 	                       defines.c_str(),
 	                       nullptr, nullptr);
 
+	CHECK_ERROR(status, "cl::Program::Build");
+
 	std::string log;
 	program.getBuildInfo(devices[0],CL_PROGRAM_BUILD_LOG,&log);
 	if(log.size() > 0)
 	{
 		std::cout << log << std::endl;
 	}
-	CHECK_ERROR(status, "cl::Program::Build");
 }
 
-void Convolution3DCL::loadKernel(const std::string& kernelName)
+void Convolution3DCLImage::loadKernel(const std::string& kernelName)
 {
 	kernel = cl::Kernel(program,kernelName.c_str(), &status);
 	CHECK_ERROR(status, "cl::Kernel");
 }
 
-bool Convolution3DCL::setupCLcontext()
+bool Convolution3DCLImage::setupCLcontext()
 {
 	status = cl::Platform::get(&platforms);
 
-	status = platforms[0].getDevices(CL_DEVICE_TYPE_GPU,&devices);
+	status = platforms[0].getDevices(CL_DEVICE_TYPE_ALL,&devices);
 	CHECK_ERROR(status, "cl::Platform::getDevices");
 
 	context = cl::Context(devices,nullptr,nullptr,nullptr,&status);
@@ -115,43 +116,30 @@ bool Convolution3DCL::setupCLcontext()
 	return true;
 }
 
-void Convolution3DCL::setupKernelArgs(image_stack_cref image,
+void Convolution3DCLImage::setupKernelArgs(image_stack_cref image,
                                       image_stack_cref filterKernel,
                                       const std::vector<int>& offset)
 {
-	imageSize[0] = image.shape()[2];
+	imageSize[0] = image.shape()[0];
 	imageSize[1] = image.shape()[1];
-	imageSize[2] = image.shape()[0];
+	imageSize[2] = image.shape()[2];
 	filterSize[0] = filterKernel.shape()[2];
 	filterSize[1] = filterKernel.shape()[1];
 	filterSize[2] = filterKernel.shape()[0];
-	imageSizeInner[0] = imageSize[0]-2*(filterSize[0]/2);
-	imageSizeInner[1] = imageSize[1]-2*(filterSize[1]/2);
-	imageSizeInner[2] = imageSize[2]-2*(filterSize[2]/2);
 
-	inputBuffer = cl::Buffer(context,
-	                         CL_MEM_READ_ONLY |
-	                         CL_MEM_COPY_HOST_PTR,
-	                         sizeof(float) * image.num_elements(),
-	                         const_cast<float*>(image.data()), &status);
-	CHECK_ERROR(status, "cl::Buffer");
+	const cl::ImageFormat format =  cl::ImageFormat(CL_R, CL_FLOAT);
+	inputImage = cl::Image3D(context,
+	                         CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+	                         format,
+	                         imageSize[0], imageSize[1], imageSize[2],
+	                         0, 0, const_cast<float*>(image.data()), &status);
+	CHECK_ERROR(status, "cl::Image3D");
 
-	size_t imageSizeInnerTotal = imageSizeInner[0] * imageSizeInner[1] * imageSizeInner[2];
-	outputBuffer[0] = cl::Buffer(context,
-	                             CL_MEM_WRITE_ONLY,
-	                             sizeof(float) * imageSizeInnerTotal,
-	                             nullptr, &status);
-	CHECK_ERROR(status, "cl::Buffer");
+	outputImage = cl::Image3D(context, CL_MEM_WRITE_ONLY, format,
+	                          imageSize[0], imageSize[1], imageSize[2],
+	                          0, 0, nullptr, &status);
+	CHECK_ERROR(status, "cl::Image3D");
 
-	cl_float val = 0.0f;
-	queue.enqueueFillBuffer(outputBuffer[0], val, 0, sizeof(float) * imageSizeInnerTotal);
-
-	outputBuffer[1] = cl::Buffer(context,
-	                             CL_MEM_WRITE_ONLY,
-	                             sizeof(float) * imageSizeInnerTotal,
-	                             nullptr, &status);
-	CHECK_ERROR(status, "cl::Buffer");
-	
 	filterWeightsBuffer = cl::Buffer(context,
 	                                 CL_MEM_READ_ONLY |
 	                                 CL_MEM_COPY_HOST_PTR,
@@ -159,71 +147,36 @@ void Convolution3DCL::setupKernelArgs(image_stack_cref image,
 	                                 const_cast<float*>(filterKernel.data()), &status);
 	CHECK_ERROR(status, "cl::Buffer");
 
-	kernel.setArg(0,inputBuffer);
+	kernel.setArg(0,inputImage);
 	kernel.setArg(1,filterWeightsBuffer);
-	kernel.setArg(2,outputBuffer[0]);
+	kernel.setArg(2,outputImage);
 }
 
-void Convolution3DCL::execute()
+void Convolution3DCLImage::execute()
 {
-	bool d = 0;
-	for(int z = 0; z < filterSize[2]; z +=3)
-	{
-		for(int y = 0; y < filterSize[1]; y +=3)
-		{
-			for(int x = 0; x < filterSize[0]; x +=3)
-			{
-				cl_int3 offset = {x, y, z};
-				kernel.setArg(4, offset);
-				kernel.setArg(2, outputBuffer[d]);
-				kernel.setArg(3, outputBuffer[!d]);
-				d = !d;
-				queue.enqueueNDRangeKernel(kernel, 0,
-				                           cl::NDRange(imageSizeInner[0],
-				                                       imageSizeInner[1],
-				                                       imageSizeInner[2]),
-				                           cl::NDRange(4, 4, 4));
-				CHECK_ERROR(status, "Queue::enqueueNDRangeKernel");
-			}
-		}
-	}
-	outputSwap = d;
-
-	// queue.enqueueNDRangeKernel(kernel, 0,
-	//                            cl::NDRange(imageSizeInner[0],
-	//                                        imageSizeInner[1],
-	//                                        imageSizeInner[2]));
+	queue.enqueueNDRangeKernel(kernel,0,cl::NDRange(imageSize[0],
+	                                                imageSize[1],
+	                                                imageSize[2]));
 	CHECK_ERROR(status, "Queue::enqueueNDRangeKernel");
 }
 
-void Convolution3DCL::getResult(image_stack_ref result)
+void Convolution3DCLImage::getResult(image_stack_ref result)
 {
-	cl::size_t<3> bufOffset;
-	bufOffset[0] = 0;
-	bufOffset[1] = 0;
-	bufOffset[2] = 0;
-	cl::size_t<3> hostOffset;
-	hostOffset[0] = (filterSize[0]/2)*sizeof(float);
-	hostOffset[1] = filterSize[1]/2;
-	hostOffset[2] = filterSize[2]/2;
+	cl::size_t<3> origin;
+	origin[0] = 0;
+	origin[1] = 0;
+	origin[2] = 0;
 	cl::size_t<3> region;
-	region[0] = imageSizeInner[0]*sizeof(float);
-	region[1] = imageSizeInner[1];
-	region[2] = imageSizeInner[2];
-
-	status = queue.enqueueReadBufferRect(outputBuffer[outputSwap], CL_TRUE,
-	                                     bufOffset,
-	                                     hostOffset,
-	                                     region,
-	                                     imageSizeInner[0] * sizeof(float),
-	                                     imageSizeInner[0] * imageSizeInner[1] * sizeof(float),
-	                                     imageSize[0] * sizeof(float),
-	                                     imageSize[0] * imageSize[1] * sizeof(float),
-	                                     result.data());
-	CHECK_ERROR(status, "Queue::enqueueReadBufferRect");
+	region[0] = result.shape()[0];
+	region[1] = result.shape()[1];
+	region[2] = result.shape()[2];
+	status = queue.enqueueReadImage(outputImage, CL_TRUE,
+	                                origin, region, 0, 0,
+	                                result.data());
+	CHECK_ERROR(status, "Queue::enqueueReadImage");
 }
 
-void Convolution3DCL::checkError(cl_int status, const char* label, const char* file, int line)
+void Convolution3DCLImage::checkError(cl_int status, const char* label, const char* file, int line)
 {
 	if(status == CL_SUCCESS)
 	{

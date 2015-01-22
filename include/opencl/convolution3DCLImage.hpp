@@ -1,5 +1,5 @@
-#ifndef CONVOLUTION3DCL_HPP
-#define CONVOLUTION3DCL_HPP
+#ifndef CONVOLUTION3DCLIMAGE_HPP
+#define CONVOLUTION3DCLIMAGE_HPP
 
 #include <vector>
 #include <string>
@@ -16,25 +16,26 @@ namespace anyfold {
 
 namespace opencl {
 
-class Convolution3DCL
+class Convolution3DCLImage
 {
 public:
-	Convolution3DCL() = default;
-	~Convolution3DCL() = default;
+	Convolution3DCLImage() = default;
+	~Convolution3DCLImage() = default;
 
 	bool setupCLcontext();
 	void createProgramAndLoadKernel(const std::string& fileName,
 	                                const std::string& kernelName,
-	                                size_t const* filterSize);
+					size_t const* filterSize);
 	void setupKernelArgs(image_stack_cref _image,
 	                     image_stack_cref _kernel,
 	                     const std::vector<int>& _offset);
 	void execute();
 	void getResult(image_stack_ref result);
+	// void convolve3D(/* something image3D, something filterkernel3D */);
 
 
 private:
-	void createProgram(const std::string& source, size_t const* filterSize);
+	void createProgram(const std::string& source,size_t const* filterSize);
 	void loadKernel(const std::string& kernelName);
 	std::string getDeviceInfo(cl::Device device, cl_device_info info);
 	std::string getDeviceName(cl::Device device);
@@ -55,17 +56,15 @@ private:
 
 	cl_int status = CL_SUCCESS;
 
-	cl::Buffer inputBuffer;
-	cl::Buffer outputBuffer[2];
+	cl::Image3D inputImage;
+	cl::Image3D outputImage;
 	cl::Buffer filterWeightsBuffer;
 	std::size_t imageSize[3];
-	std::size_t imageSizeInner[3];
 	std::size_t filterSize[3];
 
-	bool outputSwap = 0;
 };
 
 } /* namespace opencl */
 } /* namespace anyfold */
 
-#endif /* CONVOLUTION3DCL_HPP */
+#endif /* CONVOLUTION3DCLIMAGE_HPP */
