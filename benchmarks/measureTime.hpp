@@ -1,53 +1,48 @@
 #ifndef _MEASURETIME_HPP_
 #define _MEASURETIME_HPP_
 
-#include <time.h>
+#include <chrono>
+#include <iostream>
 
 class SimpleTimer
 {
 public:
 	void start()
 	{
-		clock_gettime(CLOCK_REALTIME, &startTime);
+		startTime = std::chrono::high_resolution_clock::now();
 	};
 	void end()
 	{
-		clock_gettime(CLOCK_REALTIME, &endTime);
+		endTime = std::chrono::high_resolution_clock::now();
+
 	};
 	uint64_t getNS()
 	{
-		struct timespec t = timeDiff(startTime, endTime);
-		return t.tv_sec * 1000000000 + t.tv_nsec;
+		return std::chrono::duration_cast<std::chrono::nanoseconds>(endTime - startTime).count();
 	}
 	void print(bool longOutput = false)
 	{
-		struct timespec t = timeDiff(startTime, endTime);
 		if(longOutput)
 		{
-			printf("Zeit: %ld.%03lds\n", t.tv_sec, t.tv_nsec/1000000);
+			std::cout << "Zeit: "
+			          << std::chrono::duration_cast<std::chrono::seconds>(endTime-startTime).count()
+			          << "."
+			          << std::chrono::duration_cast<std::chrono::milliseconds>(endTime-startTime).count()
+			          << std::endl;
 		}
 		else
 		{
-			printf("%ld.%03lds\n", t.tv_sec, t.tv_nsec/1000000);
+			std::cout << std::chrono::duration_cast<std::chrono::seconds>(endTime-startTime).count()
+			          << "."
+			          << std::chrono::duration_cast<std::chrono::milliseconds>(endTime-startTime).count()
+			          << std::endl;
+
 		}
 	};
 
 private:
-	struct timespec timeDiff(struct timespec start, struct timespec end)
-	{
-		struct timespec temp;
-		if ((end.tv_nsec-start.tv_nsec)<0) {
-			temp.tv_sec = end.tv_sec-start.tv_sec-1;
-			temp.tv_nsec = 1000000000+end.tv_nsec-start.tv_nsec;
-		} else {
-			temp.tv_sec = end.tv_sec-start.tv_sec;
-			temp.tv_nsec = end.tv_nsec-start.tv_nsec;
-		}
-		return temp;
-	};
-	
-	struct timespec startTime;
-	struct timespec endTime;
+	std::chrono::high_resolution_clock::time_point startTime;
+	std::chrono::high_resolution_clock::time_point endTime;
 };
 
 #endif /* _MEASURETIME_HPP_ */
