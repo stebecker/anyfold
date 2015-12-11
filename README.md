@@ -14,7 +14,7 @@ C/C++ library to provide a unified API for high-performance convolutions.
 ### CLI
 
 ```bash
-$ git clone https://github.com/psteinb/anyfold
+$ git clone https://github.com/stebecker/anyfold
 $ cd anyfold
 $ mkdir build
 $ cd build
